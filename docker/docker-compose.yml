@@ -345,6 +345,7 @@ services:
      - VE-network
 
 
+
  vachan-ai:
     image: jayasankarkk/vachan-ai:0.0.0-alpha.5
     healthcheck:
