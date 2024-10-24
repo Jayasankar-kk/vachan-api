@@ -28,7 +28,8 @@ with the underlying Databases and modules in Vachan-Engine. \
 \n • For Vachan-CMS docs: {root_url}/v2/cms/rest/docs,\
 \n • For Vachan-TBT docs: {root_url}/v2/text/translate/token-based/docs,\
 \n • For Vachan-Auth docs: {root_url}/v2/auth/docs,\
-\n • For Vachan-AI docs: {root_url}/v2/ai/docs")
+\n • For Vachan-AI docs: {root_url}/v2/ai/docs,\
+\n • For Vachan-LLM docs: {root_url}/api/docs"  )
 template = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -247,7 +248,7 @@ def custom_openapi():
         f"<br> • <a href=\"{root_url}/v2/cms/rest/docs\" > Vachan-CMS docs </a>"
         f"<br> • <a href=\"{root_url}/v2/auth/docs\" > Vachan-Auth docs </a>"
         f"<br> • <a href=\"{root_url}/v2/ai/docs\" > Vachan-AI docs </a>"
-
+        f"<br> • <a href=\"{root_url}/api/docs\" > Vachan-LLM docs </a>"
         ),
         routes=app.routes
     )
