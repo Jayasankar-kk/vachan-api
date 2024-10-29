@@ -459,12 +459,15 @@ services:
     image: mintplexlabs/anythingllm:latest
     ports:
     - "3001:3001"
-    cap_add:
-      - SYS_ADMIN
+    - "7003:7003"
+    # cap_add:
+    #   - SYS_ADMIN
     environment:
     # Adjust for your environment
       - STORAGE_DIR=/app/server/storage
-      - JWT_SECRET="6710e067711c8001b6e509275dc6ef35"
+      - JWT_SECRET=6710e067711c8001b6e509275dc6ef35
+      - SERVER_PORT=7003
+      - AUTH_TOKEN=hunter2
       - LLM_PROVIDER=generic-openai
       - GENERIC_OPEN_AI_BASE_PATH=http://192.168.2.232:8000/model/
       - GENERIC_OPEN_AI_MODEL_PREF=mock-gpt-model
@@ -481,7 +484,7 @@ services:
       # Add any other keys here for services or settings
       # you can find in the docker/.env.example file
     volumes:
-      -  ${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}/anythingllm:/app/server/storage
+      -  ${LLM_VOL:-/home/gitautodeploy/vachan_ai_data}:/app/server/storage
     restart: always
     extra_hosts:
     - "host.docker.internal:host-gateway"
