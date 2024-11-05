@@ -466,7 +466,7 @@ services:
     # Adjust for your environment
       - STORAGE_DIR=/app/server/storage
       - JWT_SECRET=6710e067711c8001b6e509275dc6ef35
-      - SERVER_PORT=7003
+      - SERVER_PORT=3001
       - AUTH_TOKEN=hunter2
       - LLM_PROVIDER=generic-openai
       - GENERIC_OPEN_AI_BASE_PATH=http://192.168.2.232:8000/model/
