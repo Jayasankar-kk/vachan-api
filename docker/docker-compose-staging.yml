@@ -126,7 +126,7 @@ services:
     links:
      - vachan-db
     ports:
-     - "7001:8000"
+     - "7005:8000"
     expose:
      - 8000
      - 7001
@@ -473,7 +473,7 @@ services:
       - GENERIC_OPEN_AI_MODEL_PREF=mock-gpt-model
       - GENERIC_OPEN_AI_MODEL_TOKEN_LIMIT=512
       - GENERIC_OPEN_AI_API_KEY=dummy-abc
-      - EMBEDDING_ENGINE=ollama
+      - EMBEDDING_ENGINE=AnythingLLM Embedder
       - EMBEDDING_BASE_PATH=http://127.0.0.1:11434
       - EMBEDDING_MODEL_PREF=nomic-embed-text:latest
       - EMBEDDING_MODEL_MAX_CHUNK_LENGTH=8192
