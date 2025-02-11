@@ -21,6 +21,25 @@ server {
     }
 }
 
+# New HTTP server block for LLM domain
+server {
+    listen 80;
+    listen [::]:80;
+    client_max_body_size 100M;
+    proxy_read_timeout 300;
+    proxy_connect_timeout 300;
+    proxy_send_timeout 300;
+    server_name ${VACHAN_LLM_DOMAIN};
+    server_tokens off;
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    location / {
+        return 301 https://${VACHAN_LLM_DOMAIN}$request_uri;
+    }
+}
+
+
 server {
     listen 443 default_server ssl http2;
     listen [::]:443 ssl http2;
@@ -68,4 +87,31 @@ server {
     location / {
         proxy_pass http://vachan-api:8000;
     }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+
+    server_name ${VACHAN_LLM_DOMAIN};
+
+    client_max_body_size 100M;
+
+    proxy_read_timeout 300;
+    proxy_connect_timeout 300;
+    proxy_send_timeout 300;
+
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+
+    location / {
+        proxy_buffering off;  # Required for chunk-streaming
+        proxy_cache off;
+        proxy_pass http://anything-llm:8010/;
+        proxy_set_header      X-Real-IP $remote_addr;
+        proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header      Host $http_host;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+    }
+
 }

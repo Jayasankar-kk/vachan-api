@@ -465,6 +465,8 @@ services:
     container_name: redis-worker
 
 
+
+
  # Web Server
  web-server-local:
     image: nginx:latest

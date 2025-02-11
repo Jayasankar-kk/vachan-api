@@ -458,6 +458,38 @@ services:
     container_name: redis-worker
 
 
+ anything-llm:
+    image: mintplexlabs/anythingllm:latest
+    ports:
+    - "8010:8010"
+    environment:
+    # Adjust for your environment
+      - STORAGE_DIR=/app/server/storage
+      - JWT_SECRET=${JWT_SECRET:-6710e067711c8001b6e509275dc6ef35}
+      - SERVER_PORT=8010
+      - AUTH_TOKEN=${ANYTHING_LLM_PASSWORD:-hunter2}
+      - LLM_PROVIDER=generic-openai
+      - GENERIC_OPEN_AI_BASE_PATH=${VACHAN_AI_SERVED_MODEL_URI:-http://dov2prodconn.bridgeconn.com:8085}
+      - GENERIC_OPEN_AI_MODEL_PREF=mock-gpt-model
+      - GENERIC_OPEN_AI_MODEL_TOKEN_LIMIT=512
+      - GENERIC_OPEN_AI_API_KEY=dummy-abc
+      - VECTOR_DB=lancedb
+      - WHISPER_PROVIDER=local
+      - TTS_PROVIDER=native
+      - PASSWORDMINCHAR=8
+    volumes:
+      -  ${ANYTHINGLLM_VOL:-/home/gitautodeploy/vachan_ai_data}:/app/server/storage
+    restart: always
+    profiles:
+     - local-run
+     - deployment
+    expose:
+     - 8010
+    networks:
+     - VE-network 
+    container_name: anything-llm
+
+
  # Web Server
  web-server-local:
     image: nginx:latest
