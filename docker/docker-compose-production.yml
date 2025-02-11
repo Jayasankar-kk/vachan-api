@@ -470,7 +470,6 @@ services:
     ports:
     - "8010:8010"
     environment:
-    # Adjust for your environment
       - STORAGE_DIR=/app/server/storage
       - JWT_SECRET=${JWT_SECRET:-6710e067711c8001b6e509275dc6ef35}
       - SERVER_PORT=8010
