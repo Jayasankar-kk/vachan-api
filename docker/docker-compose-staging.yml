@@ -596,15 +596,17 @@ services:
      - VE-network
 
  bible-glyph:
-    image: kavitha3797/bible-glyph:1.0.0-alpha.4
+    image: kavitha3797/bible-glyph:1.0.0-alpha.5
     ports:
       - "8011:8000"
     environment:
       - BIBLE_GLYPH_BASEPATH=/v2/bible-glyph
       - TYPST_FONT_PATHS=/app/data/fonts
+      - BIBLE_GLYPH_LOG_LEVEL=${BIBLE_GLYPH_LOG_LEVEL:-INFO}
     volumes:
       # to persist uploaded fonts
       - bible-glyph-vol:/app/data/fonts
+      - bible-glyph-logs:/app/logs
     restart: unless-stopped
     networks:
      - VE-network
@@ -624,6 +626,7 @@ volumes:
   kratos-db-backup:
   vachan-tbt-ml-models-vol:
   bible-glyph-vol:
+  bible-glyph-logs:
   hyperdx-db:
     driver: local
   hyperdx-data:
