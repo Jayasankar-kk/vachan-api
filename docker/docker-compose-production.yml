@@ -373,7 +373,7 @@ services:
     restart: unless-stopped  
 
  vachan-ai:
-    image: vachanengine/vachan-ai:25.10.16-beta
+    image: vachanengine/vachan-ai:26.03.17-beta
     healthcheck:
      timeout: 45s
      interval: 10s
@@ -426,6 +426,12 @@ services:
      - OTEL_SERVICE_VERSION=1.0.0
      - OTEL_PYTHON_AUTO_INSTRUMENTATION_ENABLED=true
 
+     - MLFLOW_DISABLE_TELEMETRY=true
+     - DO_NOT_TRACK=true
+     - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+     - VACHAN_AI_PUSH_NOTIFICATION=${VACHAN_AI_PUSH_NOTIFICATION}
+
+
     command: opentelemetry-instrument uvicorn main:app --host 0.0.0.0 --port 8009
     volumes:
      - ${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}/docker-volumes/ai-logs-vol:/app/logs
@@ -456,7 +462,7 @@ services:
 
 
  worker:
-    image: vachanengine/vachan-ai:25.10.16-beta
+    image: vachanengine/vachan-ai:26.03.17-beta
     healthcheck:
      timeout: 45s
      interval: 10s
@@ -491,6 +497,12 @@ services:
      - OTEL_PYTHON_LOG_CORRELATION=true
      - OTEL_SERVICE_VERSION=1.0.0
      - OTEL_PYTHON_AUTO_INSTRUMENTATION_ENABLED=true
+
+     - MLFLOW_DISABLE_TELEMETRY=true
+     - DO_NOT_TRACK=true
+     - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+     - VACHAN_AI_PUSH_NOTIFICATION=${VACHAN_AI_PUSH_NOTIFICATION}
+
     command: rq worker-pool -n ${WORKER_COUNT} --url redis://:${VACHAN_REDIS_PASS}@redis:6379 --job-class rq.job.Job
     links:
       - redis
