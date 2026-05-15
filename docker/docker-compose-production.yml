@@ -70,6 +70,40 @@ services:
     networks:
       - VE-network
 
+ kong-migrations:
+    image: kong/kong-gateway:3.13.0.1
+    command: kong migrations bootstrap
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: vachan-db
+      KONG_PG_USER: ${VACHAN_POSTGRES_USER:-postgres}
+      KONG_PG_PASSWORD: ${VACHAN_POSTGRES_PASSWORD:-password}
+      KONG_PG_DATABASE: kong
+    networks:
+     - VE-network
+    depends_on:
+      vachan-db:
+        condition: service_healthy
+
+ kong:
+    image: kong/kong-gateway:3.13.0.1
+    restart: always
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: vachan-db
+      KONG_PG_USER: ${VACHAN_POSTGRES_USER:-postgres}
+      KONG_PG_PASSWORD: ${VACHAN_POSTGRES_PASSWORD:-password}
+      KONG_PG_DATABASE: kong
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8085:8001"
+      - "8081:8000" 
+    networks:
+     - VE-network
+    depends_on:
+      - kong-migrations
+
  vachan-db:
     image: postgres:16.0
     healthcheck:
@@ -100,6 +134,7 @@ services:
     #  - ../db/csvs:/csvs
     #  - ../db/seed_DB.sql:/docker-entrypoint-initdb.d/seed_DB.sql
      - vachan-db-backup:/var/backups:rw
+     - ./init-kong.sql:/docker-entrypoint-initdb.d/init-kong.sql:ro
     labels:
       ofelia.enabled: "true"
       ofelia.job-exec.vachan-backup.schedule: "0 0 0 * * *" #"Takes a single dump within the db container every day at 00:00 am"
@@ -307,7 +342,7 @@ services:
       - VE-network
 
  vachan-access:
-    image: vachanengine/vachan-access:26.05.14-beta
+    image: vachanengine/vachan-access:v2.0.20
     environment:
      - VACHAN_POSTGRES_HOST=vachan-db
      - VACHAN_POSTGRES_USER=${VACHAN_POSTGRES_USER:-postgres}
