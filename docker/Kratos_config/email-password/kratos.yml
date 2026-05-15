@@ -85,7 +85,7 @@ hashers:
     key_length: 16
 
 session:
-  lifespan: 60m
+  lifespan: 8760h
 
 # multiple schema
 identity:

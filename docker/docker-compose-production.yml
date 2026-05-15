@@ -70,6 +70,40 @@ services:
     networks:
       - VE-network
 
+ kong-migrations:
+    image: kong/kong-gateway:3.13.0.1
+    command: kong migrations bootstrap
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: vachan-db
+      KONG_PG_USER: ${VACHAN_POSTGRES_USER:-postgres}
+      KONG_PG_PASSWORD: ${VACHAN_POSTGRES_PASSWORD:-password}
+      KONG_PG_DATABASE: kong
+    networks:
+     - VE-network
+    depends_on:
+      vachan-db:
+        condition: service_healthy
+
+ kong:
+    image: kong/kong-gateway:3.13.0.1
+    restart: always
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: vachan-db
+      KONG_PG_USER: ${VACHAN_POSTGRES_USER:-postgres}
+      KONG_PG_PASSWORD: ${VACHAN_POSTGRES_PASSWORD:-password}
+      KONG_PG_DATABASE: kong
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8085:8001"
+      - "8081:8000" 
+    networks:
+     - VE-network
+    depends_on:
+      - kong-migrations
+
  vachan-db:
     image: postgres:16.0
     healthcheck:
@@ -100,6 +134,7 @@ services:
     #  - ../db/csvs:/csvs
     #  - ../db/seed_DB.sql:/docker-entrypoint-initdb.d/seed_DB.sql
      - vachan-db-backup:/var/backups:rw
+     - ./init-kong.sql:/docker-entrypoint-initdb.d/init-kong.sql:ro
     labels:
       ofelia.enabled: "true"
       ofelia.job-exec.vachan-backup.schedule: "0 0 0 * * *" #"Takes a single dump within the db container every day at 00:00 am"
@@ -307,7 +342,7 @@ services:
       - VE-network
 
  vachan-access:
-    image: vachanengine/vachan-access:v2.0.19
+    image: vachanengine/vachan-access:v2.0.20
     environment:
      - VACHAN_POSTGRES_HOST=vachan-db
      - VACHAN_POSTGRES_USER=${VACHAN_POSTGRES_USER:-postgres}
@@ -373,7 +408,7 @@ services:
     restart: unless-stopped  
 
  vachan-ai:
-    image: vachanengine/vachan-ai:26.03.17-beta
+    image: vachanengine/vachan-ai:26.05.14-beta
     healthcheck:
      timeout: 45s
      interval: 10s
@@ -413,7 +448,7 @@ services:
      - VACHAN_AI_MLFLOW_DST_PATH=${VACHAN_AI_MLFLOW_DST_PATH:-/var/common/mlflow}
      - VACHAN_DOMAIN=http://vachan-access:8007
      - VACHAN_AI_DOMAIN=${VACHAN_AI_DOMAIN:-https://api.vachanengine.org/}
-     - VACHAN_AI_CONFIG_PATH=${VACHAN_AI_CONFIG_PATH:-/app/config}
+     - VACHAN_AI_CONFIG_PATH=/app/config
      - VACHAN_AI_REFERENCE_SPEAKERS=${VACHAN_AI_REFERENCE_SPEAKERS:-/app/reference_speakers}
      - OPENAI_API_KEY=${OPENAI_API_KEY}
      # HyperDX/OpenTelemetry Configuration
@@ -430,6 +465,16 @@ services:
      - DO_NOT_TRACK=true
      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
      - VACHAN_AI_PUSH_NOTIFICATION=${VACHAN_AI_PUSH_NOTIFICATION}
+     - ENABLE_RATE_LIMIT=false
+     - LIMIT_STT=5
+     - LIMIT_MT=10
+     - LIMIT_TTS=5
+     - LIMIT_S2S=5
+     - LIMIT_AUDIO_ENHANCE=5
+     - LIMIT_AUDIO_SEGMENTATION=5
+     - LIMIT_FA=5
+     - LIMIT_DEFAULT=60
+     - VACHAN_SERVICE_TOKEN=vachanai-service
 
 
     command: opentelemetry-instrument uvicorn main:app --host 0.0.0.0 --port 8009
@@ -461,69 +506,69 @@ services:
     container_name: vachan-ai
 
 
- worker:
-    image: vachanengine/vachan-ai:26.03.17-beta
-    healthcheck:
-     timeout: 45s
-     interval: 10s
-     retries: 10 
-    environment:
-     - REDIS_HOST=redis
-     - REDIS_PORT=6379
-     - VACHAN_POSTGRES_HOST=${VACHAN_POSTGRES_HOST:-vachan-db}
-     - VACHAN_POSTGRES_USER=${VACHAN_POSTGRES_USER:-postgres}
-     - VACHAN_POSTGRES_PASSWORD=${VACHAN_POSTGRES_PASSWORD:-password}
-     - VACHAN_POSTGRES_DATABASE=${VACHAN_POSTGRES_DATABASE:-vachan_dev}
-     - VACHAN_POSTGRES_SCHEMA=${VACHAN_POSTGRES_SCHEMA:-ai_schema}
-     - VACHAN_POSTGRES_PORT=5432
-     - VACHAN_POSTGRES_POOL_SIZE=${VACHAN_POSTGRES_POOL_SIZE:-20}
-     - VACHAN_POSTGRES_MAX_OVERFLOW=${VACHAN_POSTGRES_MAX_OVERFLOW:-30}
-     - VACHAN_AI_REDIS_QUE_TIMEOUT=${VACHAN_AI_REDIS_QUE_TIMEOUT:-900}
-     - VACHAN_AI_DATA_PATH=${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}
-     - VACHAN_AI_SERVED_MODEL_URI=${VACHAN_AI_SERVED_MODEL_URI:-http://dov2prodconn.bridgeconn.com:8085}
-     - VACHAN_AI_CONFIG_PATH=${VACHAN_AI_CONFIG_PATH:-/app/config} 
-     - VACHAN_USE_VE_AUTH=${VACHAN_USE_VE_AUTH:-True}
-     - VACHAN_AI_ENV=${VACHAN_AI_ENV:-Production}
-     - PYTHONPATH=/app/app/core/model_access/ai_model_core.py:/app/app/core/cloud_operations
-     - VACHAN_AI_LOGGING_LEVEL=INFO
-     - WORKER_COUNT=${WORKER_COUNT:-4}
-     - VACHAN_AI_REFERENCE_SPEAKERS=${VACHAN_AI_REFERENCE_SPEAKERS:-/app/reference_speakers}
-     - OPENAI_API_KEY=${OPENAI_API_KEY}
-     - HYPERDX_API_KEY=${HYPERDX_API_KEY}
-     - OTEL_SERVICE_NAME=vachan-ai
-     - OTEL_EXPORTER_OTLP_ENDPOINT=http://hyperdx:4318
-     - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-     - OTEL_LOG_LEVEL=debug
-     - OTEL_PYTHON_LOG_CORRELATION=true
-     - OTEL_SERVICE_VERSION=1.0.0
-     - OTEL_PYTHON_AUTO_INSTRUMENTATION_ENABLED=true
+#  worker:
+#     image: vachanengine/vachan-ai:26.03.17-beta
+#     healthcheck:
+#      timeout: 45s
+#      interval: 10s
+#      retries: 10 
+#     environment:
+#      - REDIS_HOST=redis
+#      - REDIS_PORT=6379
+#      - VACHAN_POSTGRES_HOST=${VACHAN_POSTGRES_HOST:-vachan-db}
+#      - VACHAN_POSTGRES_USER=${VACHAN_POSTGRES_USER:-postgres}
+#      - VACHAN_POSTGRES_PASSWORD=${VACHAN_POSTGRES_PASSWORD:-password}
+#      - VACHAN_POSTGRES_DATABASE=${VACHAN_POSTGRES_DATABASE:-vachan_dev}
+#      - VACHAN_POSTGRES_SCHEMA=${VACHAN_POSTGRES_SCHEMA:-ai_schema}
+#      - VACHAN_POSTGRES_PORT=5432
+#      - VACHAN_POSTGRES_POOL_SIZE=${VACHAN_POSTGRES_POOL_SIZE:-20}
+#      - VACHAN_POSTGRES_MAX_OVERFLOW=${VACHAN_POSTGRES_MAX_OVERFLOW:-30}
+#      - VACHAN_AI_REDIS_QUE_TIMEOUT=${VACHAN_AI_REDIS_QUE_TIMEOUT:-900}
+#      - VACHAN_AI_DATA_PATH=${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}
+#      - VACHAN_AI_SERVED_MODEL_URI=${VACHAN_AI_SERVED_MODEL_URI:-http://dov2prodconn.bridgeconn.com:8085}
+#      - VACHAN_AI_CONFIG_PATH=${VACHAN_AI_CONFIG_PATH:-/app/config} 
+#      - VACHAN_USE_VE_AUTH=${VACHAN_USE_VE_AUTH:-True}
+#      - VACHAN_AI_ENV=${VACHAN_AI_ENV:-Production}
+#      - PYTHONPATH=/app/app/core/model_access/ai_model_core.py:/app/app/core/cloud_operations
+#      - VACHAN_AI_LOGGING_LEVEL=INFO
+#      - WORKER_COUNT=${WORKER_COUNT:-4}
+#      - VACHAN_AI_REFERENCE_SPEAKERS=${VACHAN_AI_REFERENCE_SPEAKERS:-/app/reference_speakers}
+#      - OPENAI_API_KEY=${OPENAI_API_KEY}
+#      - HYPERDX_API_KEY=${HYPERDX_API_KEY}
+#      - OTEL_SERVICE_NAME=vachan-ai
+#      - OTEL_EXPORTER_OTLP_ENDPOINT=http://hyperdx:4318
+#      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+#      - OTEL_LOG_LEVEL=debug
+#      - OTEL_PYTHON_LOG_CORRELATION=true
+#      - OTEL_SERVICE_VERSION=1.0.0
+#      - OTEL_PYTHON_AUTO_INSTRUMENTATION_ENABLED=true
 
-     - MLFLOW_DISABLE_TELEMETRY=true
-     - DO_NOT_TRACK=true
-     - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-     - VACHAN_AI_PUSH_NOTIFICATION=${VACHAN_AI_PUSH_NOTIFICATION}
+#      - MLFLOW_DISABLE_TELEMETRY=true
+#      - DO_NOT_TRACK=true
+#      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+#      - VACHAN_AI_PUSH_NOTIFICATION=${VACHAN_AI_PUSH_NOTIFICATION}
 
-    command: rq worker-pool -n ${WORKER_COUNT} --url redis://:${VACHAN_REDIS_PASS}@redis:6379 --job-class rq.job.Job
-    links:
-      - redis
-      - vachan-db
-    depends_on:
-      - vachan-db
-      - redis
-      - vachan-api
-      - hyperdx
-    volumes:
-     - ${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}/docker-volumes/redis_worker-logs-vol:/app/logs
-     - ../data/csvs:/csvs
-     - ${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}/Downloads:/tmp
-     - ${VACHAN_AI_CONFIG_PATH}:/app/config
-     - ${VACHAN_AI_DATA_PATH}/reference_speakers:/app/reference_speakers
-    profiles:
-     - local-run
-     - deployment
-    networks:
-     - VE-network 
-    container_name: redis-worker
+#     command: rq worker-pool -n ${WORKER_COUNT} --url redis://:${VACHAN_REDIS_PASS}@redis:6379 --job-class rq.job.Job
+#     links:
+#       - redis
+#       - vachan-db
+#     depends_on:
+#       - vachan-db
+#       - redis
+#       - vachan-api
+#       - hyperdx
+#     volumes:
+#      - ${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}/docker-volumes/redis_worker-logs-vol:/app/logs
+#      - ../data/csvs:/csvs
+#      - ${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}/Downloads:/tmp
+#      - ${VACHAN_AI_CONFIG_PATH}:/app/config
+#      - ${VACHAN_AI_DATA_PATH}/reference_speakers:/app/reference_speakers
+#     profiles:
+#      - local-run
+#      - deployment
+#     networks:
+#      - VE-network 
+#     container_name: redis-worker
 
 
  # Web Server
