@@ -334,7 +334,7 @@ services:
 
  
  vachan-access:
-    image: vachanengine/vachan-access:v2.0.20
+    image: vachanengine/vachan-access:v2.0.22
     environment:
      - VACHAN_POSTGRES_HOST=vachan-db
      - VACHAN_POSTGRES_USER=${VACHAN_POSTGRES_USER:-postgres}
@@ -347,11 +347,21 @@ services:
      - VACHAN_KRATOS_APP_ADMIN_URL=http://kratos-app:4434/
      - VACHAN_SUPER_USERNAME=${VACHAN_SUPER_USERNAME}
      - VACHAN_SUPER_PASSWORD=${VACHAN_SUPER_PASSWORD}
+
      - VACHAN_TEST_MODE="False"
      - VACHAN_LOGGING_LEVEL=INFO
      - VACHAN_DOMAIN=${VACHAN_DOMAIN:-http://localhost}
      - VACHAN_CMS_DOMAIN=http://vachan-api
-    command: uvicorn main:app --host 0.0.0.0 --port 8007
+     # HyperDX/OpenTelemetry Configuration
+     - HYPERDX_API_KEY=${HYPERDX_API_KEY}
+     - OTEL_SERVICE_NAME=vachan-access
+     - OTEL_EXPORTER_OTLP_ENDPOINT=http://hyperdx:4318
+     - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+     - OTEL_LOG_LEVEL=debug
+     - OTEL_PYTHON_LOG_CORRELATION=true
+     - OTEL_SERVICE_VERSION=1.0.0
+     - OTEL_PYTHON_AUTO_INSTRUMENTATION_ENABLED=true
+    command: opentelemetry-instrument uvicorn main:app --host 0.0.0.0 --port 8007
     volumes:
      - logs-vol:/app/logs
     restart: always
@@ -401,7 +411,7 @@ services:
 
 
  vachan-ai:
-    image: vachanengine/vachan-ai:26.05.14-beta
+    image: vachanengine/vachan-ai:26.06.05-beta
     healthcheck:
      timeout: 45s
      interval: 10s
@@ -469,13 +479,7 @@ services:
      - LIMIT_DEFAULT=60 
      - VACHAN_SERVICE_TOKEN=vachanai-service 
      
-
-
-
     command: opentelemetry-instrument uvicorn main:app --host 0.0.0.0 --port 8009
-
-
-
     volumes:
      - ${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}/docker-volumes/ai-logs-vol:/app/logs
      - ${VACHAN_AI_DATA_PATH:-/home/gitautodeploy/vachan_ai_data}/cache:/root/.cache
