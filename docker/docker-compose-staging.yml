@@ -334,7 +334,7 @@ services:
 
  
  vachan-access:
-    image: vachanengine/vachan-access:v2.0.22
+    image: vachanengine/vachan-access:v2.0.23
     environment:
      - VACHAN_POSTGRES_HOST=vachan-db
      - VACHAN_POSTGRES_USER=${VACHAN_POSTGRES_USER:-postgres}
@@ -411,7 +411,7 @@ services:
 
 
  vachan-ai:
-    image: vachanengine/vachan-ai:26.06.05-beta
+    image: vachanengine/vachan-ai:26.06.10-beta
     healthcheck:
      timeout: 45s
      interval: 10s
