@@ -659,12 +659,17 @@ services:
      - VE-network
 
  bible-glyph:
-    image: kavitha3797/bible-glyph:1.0.0-alpha.5
+    image: vachanengine/bible-glyph:1.0.0-beta.1
     ports:
       - "8011:8000"
     environment:
       - BIBLE_GLYPH_BASEPATH=/v2/bible-glyph
       - TYPST_FONT_PATHS=/app/data/fonts
+      - BIBLE_GLYPH_DATA_PATH=${BIBLE_GLYPH_DATA_PATH:-/var/data-bible-glyph}
+      - BIBLE_GLYPH_REQUESTS_PER_MINUTE=${BIBLE_GLYPH_REQUESTS_PER_MINUTE:-60}
+      - TEMPLATE_UPLOAD_PATH=${TEMPLATE_UPLOAD_PATH:-/app/data/templates}
+      - VACHAN_USE_VE_AUTH=True
+      - VACHAN_DOMAIN=${VACHAN_DOMAIN:-http://127.0.0.1:8000}
       - BIBLE_GLYPH_LOG_LEVEL=${BIBLE_GLYPH_LOG_LEVEL:-INFO}
     volumes:
       # to persist uploaded fonts
