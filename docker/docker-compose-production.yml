@@ -342,7 +342,7 @@ services:
       - VE-network
 
  vachan-access:
-    image: vachanengine/vachan-access:v2.0.23
+    image: vachanengine/vachan-access:v2.0.24
     environment:
      - VACHAN_POSTGRES_HOST=vachan-db
      - VACHAN_POSTGRES_USER=${VACHAN_POSTGRES_USER:-postgres}
