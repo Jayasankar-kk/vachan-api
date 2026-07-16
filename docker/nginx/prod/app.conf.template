@@ -36,42 +36,71 @@ server {
     ssl_certificate /etc/nginx/ssl/fullchain.pem;
     ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 
+    location = /v2/ai/model/events {
+    # CORS preflight
+    if ($request_method = OPTIONS) {
+        add_header Access-Control-Allow-Origin "$http_origin" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "x-api-key, authorization, content-type, accept" always;
+        add_header Access-Control-Max-Age 600 always;
+        return 204;
+    }
 
+    proxy_pass http://vachan-ai:8009;
+
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # Important for SSE
+    proxy_buffering off;
+    proxy_cache off;
+    gzip off;
+
+    proxy_read_timeout 3600s;
+    proxy_connect_timeout 300s;
+    proxy_send_timeout 3600s;
+
+    }
     location /v2/ai/ {
         proxy_pass http://vachan-ai:8009;
         proxy_read_timeout ${AI_TIMEOUT};
         proxy_connect_timeout ${AI_TIMEOUT};
-        proxy_send_timeout ${AI_TIMEOUT};  
+        proxy_send_timeout ${AI_TIMEOUT};
     }
 
     location /v2/auth/ {
-        proxy_pass http://vachan-access:8007;    
+        proxy_pass http://vachan-access:8007;
     }
 
     location /v2/cms/rest/ {
-        proxy_pass http://vachan-cms-rest:8005;    
+        proxy_pass http://vachan-cms-rest:8005;
     }
-    
+
     location /v2/graphql/ {
-        proxy_pass http://vachan-cms-graphql:8004;    
+        proxy_pass http://vachan-cms-graphql:8004;
     }
-    
+
     location /v2/text/translate/token-based/ {
-        proxy_pass http://vachan-tbt:8003;    
+        proxy_pass http://vachan-tbt:8003;
     }
 
     location /v2/nlp/ {
-        proxy_pass http://vachan-tbt:8003;    
+        proxy_pass http://vachan-tbt:8003;
     }
-    
+
     location /v2/demos/ {
-        proxy_pass http://vachan-demos:8002;  
+        proxy_pass http://vachan-demos:8002;
     }
 
     location /v2/bible-glyph/ {
-        proxy_pass http://bible-glyph:8000;    
+        proxy_pass http://bible-glyph:8000;
     }
-   
+
     location / {
         proxy_pass http://vachan-api:8000;
     }
